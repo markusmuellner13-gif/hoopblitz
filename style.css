@@ -1,0 +1,27 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #070d1a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+#wrapper {
+    position: relative;
+}
+
+#gameCanvas {
+    display: block;
+    cursor: crosshair;
+    border: 2px solid #1e2a45;
+    border-radius: 4px;
+    box-shadow: 0 0 50px rgba(244, 162, 97, 0.25), 0 0 100px rgba(0,0,0,0.8);
+}
