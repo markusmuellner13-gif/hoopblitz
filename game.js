@@ -55,16 +55,44 @@ const PLAYER_SKINS = [
     { id:'black', name:'Phantom',     desc:'200 total points',  reqPts:200, jersey:'#222222', pants:'#111111', skin:'#8a6040', num:'0'  },
 ];
 
+// ─── Achievements definition ──────────────────────────────────
+const ACHIEVEMENTS = [
+    { id:'first_basket',   name:'First Basket',     desc:'Score your first point',          icon:'🏀' },
+    { id:'three_pointer',  name:'From Downtown',     desc:'Score a 3-pointer',               icon:'🎯' },
+    { id:'combo_3',        name:'Hat Trick',         desc:'3x combo',                        icon:'🔥' },
+    { id:'combo_5',        name:'On Fire!',          desc:'5x combo',                        icon:'💥' },
+    { id:'score_10',       name:'Double Digits',     desc:'Score 10 in one game',            icon:'⭐' },
+    { id:'score_20',       name:'Scorer',            desc:'Score 20 in one game',            icon:'🌟' },
+    { id:'score_30',       name:'Sharpshooter',      desc:'Score 30 in one game',            icon:'💫' },
+    { id:'score_40',       name:'All-Star',          desc:'Score 40 in one game',            icon:'🏆' },
+    { id:'score_50',       name:'Legend',            desc:'Score 50 in one game',            icon:'👑' },
+    { id:'level2_unlock',  name:'City Player',       desc:'Unlock City Park',                icon:'🌆' },
+    { id:'level3_unlock',  name:'Pro',               desc:'Unlock Pro Arena',                icon:'🎪' },
+    { id:'level4_unlock',  name:'Champion',          desc:'Unlock Champion Hall',            icon:'🥇' },
+    { id:'level5_unlock',  name:'Legend Stage',      desc:'Unlock Legend Stage',             icon:'🌠' },
+    { id:'beat_level5',    name:'Hall of Fame',      desc:'Complete Legend Stage',           icon:'🎖️' },
+    { id:'total_100',      name:'Century',           desc:'Earn 100 total points',           icon:'💯' },
+    { id:'total_500',      name:'500 Club',          desc:'Earn 500 total points',           icon:'🎰' },
+    { id:'games_10',       name:'Dedicated',         desc:'Play 10 games',                   icon:'📅' },
+    { id:'grab_extra_time',name:'Time Bandit',       desc:'Collect a time power-up',         icon:'⏰' },
+    { id:'nothing_but_net',name:'Nothing But Net',   desc:'Score without hitting the rim',   icon:'🕸️' },
+    { id:'daily_first',    name:'Daily Grind',       desc:'Complete a daily challenge',      icon:'📆' },
+];
+
 // ─── Profile ──────────────────────────────────────────────────
 let profile = {
-    name:          'Player',
-    totalPoints:   0,
-    gamesPlayed:   0,
-    bestScore:     0,
-    levelsUnlocked:1,
-    levelBests:    [0, 0, 0, 0, 0],
-    activeBall:    'classic',
-    activePlayer:  'red',
+    name:             'Player',
+    totalPoints:      0,
+    gamesPlayed:      0,
+    bestScore:        0,
+    levelsUnlocked:   1,
+    levelBests:       [0, 0, 0, 0, 0],
+    activeBall:       'classic',
+    activePlayer:     'red',
+    settings:         { volume: 0.8, showArc: true, fullscreen: false },
+    levelLeaderboard: [[], [], [], [], []],
+    achievements:     [],
+    dailyBest:        {},
 };
 
 async function loadProfile() {
@@ -79,6 +107,11 @@ async function loadProfile() {
         if (data) {
             Object.assign(profile, data);
             while (profile.levelBests.length < 5) profile.levelBests.push(0);
+            if (!profile.settings)         profile.settings = { volume:0.8, showArc:true, fullscreen:false };
+            if (!profile.levelLeaderboard) profile.levelLeaderboard = [[],[],[],[],[]];
+            while (profile.levelLeaderboard.length < 5) profile.levelLeaderboard.push([]);
+            if (!profile.achievements)     profile.achievements = [];
+            if (!profile.dailyBest)        profile.dailyBest = {};
         }
     } catch (_) { /* use defaults */ }
 }
@@ -134,18 +167,28 @@ function noise(dur, vol = 0.12, freq = 600, delay = 0) {
     } catch (_) {}
 }
 
+function vol(v) { return v * (profile ? profile.settings.volume : 0.8); }
+
 const SFX = {
-    score()  { tone(523,.10,'sine',.35); tone(659,.10,'sine',.35,.08); tone(784,.22,'sine',.45,.16); },
-    score3() { tone(659,.08,'sine',.35); tone(784,.08,'sine',.38,.07); tone(988,.08,'sine',.40,.14); tone(1319,.28,'sine',.55,.21); },
-    bounce() { tone(110,.07,'sine',.22); },
-    jump()   { tone(280,.06,'square',.06); tone(380,.06,'square',.04,.06); },
-    grab()   { noise(.04,.1,800); },
-    combo()  { noise(.05,.18,900); tone(880,.08,'sine',.22); },
-    unlock() { [523,659,784,1047].forEach((f,i) => tone(f,.20,'sine',.38,i*.12)); },
-    timelow(){ tone(440,.09,'square',.07); },
-    gameover(){ [392,330,262,196].forEach((f,i) => tone(f,.28,'sine',.28,i*.14)); },
-    select() { tone(660,.07,'sine',.18); },
-    denied() { tone(200,.12,'square',.10); },
+    score()     { tone(523,.10,'sine',vol(.35)); tone(659,.10,'sine',vol(.35),.08); tone(784,.22,'sine',vol(.45),.16); },
+    score3()    { tone(659,.08,'sine',vol(.35)); tone(784,.08,'sine',vol(.38),.07); tone(988,.08,'sine',vol(.40),.14); tone(1319,.28,'sine',vol(.55),.21); },
+    bounce()    { tone(110,.07,'sine',vol(.22)); },
+    jump()      { tone(280,.06,'square',vol(.06)); tone(380,.06,'square',vol(.04),.06); },
+    grab()      { noise(.04,vol(.1),800); },
+    combo()     { noise(.05,vol(.18),900); tone(880,.08,'sine',vol(.22)); },
+    unlock()    { [523,659,784,1047].forEach((f,i) => tone(f,.20,'sine',vol(.38),i*.12)); },
+    timelow()   { tone(440,.09,'square',vol(.07)); },
+    gameover()  { [392,330,262,196].forEach((f,i) => tone(f,.28,'sine',vol(.28),i*.14)); },
+    select()    { tone(660,.07,'sine',vol(.18)); },
+    denied()    { tone(200,.12,'square',vol(.10)); },
+    powerup()   { tone(880,.08,'sine',vol(.28)); tone(1100,.12,'sine',vol(.35),.08); tone(1320,.22,'sine',vol(.45),.16); },
+    achieve()   { tone(440,.07,'sine',vol(.22)); tone(550,.07,'sine',vol(.26),.06); tone(660,.14,'sine',vol(.32),.12); tone(880,.22,'sine',vol(.42),.20); },
+    crowd(lvl)  {
+        const v2 = vol(0.04 + Math.min(lvl,5)*0.012);
+        noise(.18, v2, 200+lvl*80);
+        noise(.22, v2*0.7, 400+lvl*60, .10);
+    },
+    hotstreak() { tone(660,.05,'sine',vol(.14)); tone(880,.05,'sine',vol(.18),.05); },
 };
 
 // ─── Core constants ───────────────────────────────────────────
@@ -184,6 +227,38 @@ let hoveredCard   = -1;
 let nameEditing   = false;
 let nameBuf       = '';
 
+// New feature state
+let shake            = { x:0, y:0, dur:0, intensity:0 };
+let timePowerups     = [];
+let timePowerupTimer = 0;
+let practiceMode     = false;
+let dailyMode        = false;
+let dailySeed        = 0;
+let rimHitThisShot   = false;
+let hotStreakAlpha   = 0;
+let achievementQueue = [];
+let achievementTimer = 0;
+let settingsSlider   = null;
+let leaderboardLevel = 1;
+
+// Gamepad state
+const gp = { left:false, right:false, jump:false, grab:false, shoot:false, pause:false,
+             aimX:GW/2, aimY:GH/2, connected:false };
+let gpPrevShoot = false, gpPrevPause = false;
+
+// Today's date key for daily challenge
+function todayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+function dailyLevelDef() {
+    // Seeded pseudo-random level config from date
+    let h = dailySeed;
+    const rng = () => { h = (h * 1664525 + 1013904223) & 0xffffffff; return (h >>> 0) / 0xffffffff; };
+    const lvl = Math.floor(rng() * 5);
+    return { ...LEVEL_DEFS[lvl], name: 'DAILY CHALLENGE', bgTop:'#0a0a1a', bgBot:'#141420', accentHue:60 };
+}
+
 // ─── Keyboard ─────────────────────────────────────────────────
 const keys = {};
 document.addEventListener('keydown', e => {
@@ -201,7 +276,11 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
         if (gameState === 'playing')   { gameState = 'paused'; }
         else if (gameState === 'paused') { gameState = 'playing'; lastTs = 0; }
-        else if (gameState === 'levelselect' || gameState === 'customize') { gameState = 'title'; }
+        else if (['levelselect','customize','settings','leaderboard','daily'].includes(gameState)) { gameState = 'title'; }
+    }
+    if (e.key === 'F11') { e.preventDefault();
+        profile.settings.fullscreen = !profile.settings.fullscreen; saveProfile();
+        if (window.electron && window.electron.setFullscreen) window.electron.setFullscreen(profile.settings.fullscreen);
     }
     if ((e.key === ' ' || e.key === 'Enter') && gameState === 'title')       { SFX.select(); gameState = 'levelselect'; }
     if ((e.key === ' ' || e.key === 'Enter') && gameState === 'paused')      { gameState = 'playing'; lastTs = 0; }
@@ -295,29 +374,31 @@ function handleClick(cx, cy) {
 
     // ── Title
     if (gameState === 'title') {
-        // Edit name zone
-        if (cy > 196 && cy < 218 && cx > GW/2 - 140 && cx < GW/2 + 140) {
-            startNameEdit(); return;
-        }
-        // Customize button
-        if (cy > 254 && cy < 298 && cx > GW/2-100 && cx < GW/2+100) {
-            SFX.select(); gameState = 'customize'; return;
-        }
-        // Play button
-        if (cy > 308 && cy < 368 && cx > GW/2-120 && cx < GW/2+120) {
-            SFX.select(); gameState = 'levelselect'; return;
-        }
+        if (cy > 196 && cy < 218 && cx > GW/2 - 140 && cx < GW/2 + 140) { startNameEdit(); return; }
+        if (cy > 254 && cy < 298 && cx > GW/2-100 && cx < GW/2+100) { SFX.select(); gameState = 'customize'; return; }
+        if (cy > 308 && cy < 368 && cx > GW/2-120 && cx < GW/2+120) { SFX.select(); gameState = 'levelselect'; return; }
+        // Settings button (bottom-right)
+        if (cy > GH-52 && cy < GH-12 && cx > GW-140 && cx < GW-10) { SFX.select(); gameState = 'settings'; return; }
+        // Leaderboard button
+        if (cy > GH-52 && cy < GH-12 && cx > GW-290 && cx < GW-150) { SFX.select(); gameState = 'leaderboard'; return; }
+        // Daily challenge button
+        if (cy > 458 && cy < 498 && cx > GW/2-110 && cx < GW/2+110) { SFX.select(); gameState = 'daily'; dailySeed = parseInt(todayKey().replace(/-/g,'')); return; }
         return;
     }
 
     // ── Level select
     if (gameState === 'levelselect') {
+        // Practice mode toggle button
+        if (cy > GH-52 && cy < GH-16 && cx > GW/2-80 && cx < GW/2+80) {
+            SFX.select(); practiceMode = !practiceMode; return;
+        }
         for (let i = 0; i < 5; i++) {
             const cardX = 46 + i * 168, cardY = GH/2 - 132;
             if (cx >= cardX && cx <= cardX+156 && cy >= cardY && cy <= cardY+244) {
                 if (i + 1 <= profile.levelsUnlocked) {
                     currentLevel = i + 1;
                     levelDef = LEVEL_DEFS[i];
+                    dailyMode = false;
                     SFX.select();
                     startGame();
                 } else {
@@ -326,7 +407,6 @@ function handleClick(cx, cy) {
                 return;
             }
         }
-        // Back
         if (cy > GH-56 && cy < GH-10 && cx > 10 && cx < 120) {
             SFX.select(); gameState = 'title';
         }
@@ -381,14 +461,83 @@ function handleClick(cx, cy) {
 
     // ── Unlock reveal
     if (gameState === 'unlock') { nextUnlock(); return; }
+
+    // ── Settings
+    if (gameState === 'settings') {
+        const px = GW/2-220, py = 90;
+        // Volume slider drag
+        const vx=px+140, vy=py+38, vw=260, vh=12;
+        if (cy >= vy-12 && cy <= vy+vh+12 && cx >= vx && cx <= vx+vw) {
+            profile.settings.volume = Math.max(0, Math.min(1, (cx-vx)/vw));
+            saveProfile(); return;
+        }
+        // Arc toggle
+        if (cy>=py+80&&cy<=py+104&&cx>=px+140&&cx<=px+220) {
+            profile.settings.showArc = !profile.settings.showArc; SFX.select(); saveProfile(); return;
+        }
+        // Fullscreen toggle
+        if (cy>=py+130&&cy<=py+154&&cx>=px+140&&cx<=px+220) {
+            profile.settings.fullscreen = !profile.settings.fullscreen;
+            SFX.select(); saveProfile();
+            if (window.electron && window.electron.setFullscreen) window.electron.setFullscreen(profile.settings.fullscreen);
+            return;
+        }
+        // Reset stats
+        if (cy>=py+200&&cy<=py+234&&cx>=px+140&&cx<=px+320) {
+            profile.totalPoints=0;profile.gamesPlayed=0;profile.bestScore=0;
+            profile.levelBests=[0,0,0,0,0];profile.levelsUnlocked=1;
+            profile.levelLeaderboard=[[],[],[],[],[]];profile.achievements=[];profile.dailyBest={};
+            saveProfile(); SFX.denied(); return;
+        }
+        if (cy > GH-56 && cy < GH-10 && cx > 10 && cx < 120) { SFX.select(); gameState = 'title'; }
+        return;
+    }
+
+    // ── Leaderboard
+    if (gameState === 'leaderboard') {
+        const mid = GW/2;
+        if (cy>=58&&cy<=92&&cx>=mid-170&&cx<=mid) { leaderboardLevel=Math.max(1,leaderboardLevel-1); SFX.select(); }
+        if (cy>=58&&cy<=92&&cx>mid&&cx<=mid+170)  { leaderboardLevel=Math.min(5,leaderboardLevel+1); SFX.select(); }
+        if (cy > GH-56 && cy < GH-10 && cx > 10 && cx < 120) { SFX.select(); gameState = 'title'; }
+        return;
+    }
+
+    // ── Daily challenge select
+    if (gameState === 'daily') {
+        if (cy>=280&&cy<=332&&cx>=GW/2-120&&cx<=GW/2+120) {
+            SFX.select();
+            levelDef = dailyLevelDef();
+            practiceMode = false; dailyMode = true;
+            startGame(); return;
+        }
+        if (cy > GH-56 && cy < GH-10 && cx > 10 && cx < 120) { SFX.select(); gameState = 'title'; }
+        return;
+    }
 }
 
 // ─── Post-game flow ───────────────────────────────────────────
 function afterGameOver() {
-    // Build unlock list (compare before & after)
-    newUnlocks = [];
     const prevPts = profile.totalPoints - score;
 
+    // Leaderboard submission
+    submitScore(currentLevel - 1, score);
+
+    // Daily best
+    if (dailyMode) {
+        const key = todayKey();
+        if (!profile.dailyBest[key] || score > profile.dailyBest[key]) {
+            profile.dailyBest[key] = score;
+        }
+    }
+
+    // Game achievements
+    checkGameAchievements();
+
+    // Nothing but net (scored without hitting rim)
+    if (!rimHitThisShot && score > 0) grantAchievement('nothing_but_net');
+
+    // Build unlock list
+    newUnlocks = [];
     BALL_SKINS.forEach(sk => {
         if (sk.reqPts <= 0 || sk.reqPts >= 9999) return;
         if (prevPts < sk.reqPts && profile.totalPoints >= sk.reqPts) {
@@ -401,10 +550,11 @@ function afterGameOver() {
             newUnlocks.push({ type:'player', skin:sk });
         }
     });
-    // Galaxy ball (level-based)
     if (profile.levelsUnlocked >= 6 && !(profile.levelsUnlocked - 1 >= 6)) {
         newUnlocks.push({ type:'ball', skin: BALL_SKINS.find(s => s.id === 'galaxy') });
     }
+
+    dailyMode = false; practiceMode = false;
 
     if (newUnlocks.length > 0) { SFX.unlock(); gameState = 'unlock'; }
     else                        { gameState = 'title'; }
@@ -425,6 +575,10 @@ function startGame() {
     particles = []; popups = [];
     combo = 0; comboTimer = 0; timeLowPulse = 0;
     rimPhase  = 0;
+    timePowerups = []; timePowerupTimer = 8 + Math.random()*8;
+    rimHitThisShot = false; hotStreakAlpha = 0;
+    shake = { x:0, y:0, dur:0, intensity:0 };
+    achievementQueue = []; achievementTimer = 0;
 
     player.x = 150; player.y = FLOOR_Y - player.h;
     player.vx = 0; player.vy = 0;
@@ -470,11 +624,20 @@ function scoreBasket() {
     profile.totalPoints += earned;
     if (score > profile.bestScore) profile.bestScore = score;
 
+    // Screen shake — bigger for 3pt or combo
+    const shakeAmt = pts3 ? 9 : mult >= 3 ? 11 : mult >= 2 ? 7 : 4;
+    triggerShake(shakeAmt, pts3 ? 0.28 : 0.18);
+
+    // Hot streak glow
+    if (combo >= 3) hotStreakAlpha = 1.0;
+
     ball.justScored   = true;
     ball.respawnTimer = 2.1;
+    rimHitThisShot    = false; // reset for next shot
 
     const cx = (RIM_TIP_X + RIM_BACK_X) / 2;
-    for (let i = 0; i < 34; i++) {
+    const particleCount = mult >= 3 ? 52 : mult >= 2 ? 42 : 34;
+    for (let i = 0; i < particleCount; i++) {
         particles.push({
             x: cx, y: RIM_Y,
             vx: (Math.random()-0.5)*12, vy: Math.random()*-12 - 3,
@@ -489,19 +652,171 @@ function scoreBasket() {
     else if (pts3)        label = `+3 DEEP!`;
     popups.push({ x:cx, y:RIM_Y-18, vy:-1.5, text:label, pts:basePts, life:1.8 });
 
+    // Crowd builds with combo
+    SFX.crowd(combo);
     if (mult > 1) SFX.combo();
     else if (pts3) SFX.score3();
     else SFX.score();
+    if (combo >= 3) SFX.hotstreak();
+
+    // Achievements
+    if (pts3) grantAchievement('three_pointer');
+    if (combo >= 3) grantAchievement('combo_3');
+    if (combo >= 5) grantAchievement('combo_5');
+    checkScoreAchievements();
+}
+
+// ─── Achievement helpers ───────────────────────────────────────
+function hasAchievement(id) { return profile.achievements.includes(id); }
+
+function grantAchievement(id) {
+    if (hasAchievement(id)) return;
+    profile.achievements.push(id);
+    const def = ACHIEVEMENTS.find(a => a.id === id);
+    if (def) achievementQueue.push({ ...def, timer: 3.5 });
+    SFX.achieve();
+    saveProfile();
+}
+
+function checkScoreAchievements() {
+    if (score >= 1)  grantAchievement('first_basket');
+    if (score >= 10) grantAchievement('score_10');
+    if (score >= 20) grantAchievement('score_20');
+    if (score >= 30) grantAchievement('score_30');
+    if (score >= 40) grantAchievement('score_40');
+    if (score >= 50) grantAchievement('score_50');
+}
+
+function checkGameAchievements() {
+    if (profile.gamesPlayed >= 10) grantAchievement('games_10');
+    if (profile.totalPoints >= 100) grantAchievement('total_100');
+    if (profile.totalPoints >= 500) grantAchievement('total_500');
+    if (profile.levelsUnlocked >= 2) grantAchievement('level2_unlock');
+    if (profile.levelsUnlocked >= 3) grantAchievement('level3_unlock');
+    if (profile.levelsUnlocked >= 4) grantAchievement('level4_unlock');
+    if (profile.levelsUnlocked >= 5) grantAchievement('level5_unlock');
+    if (currentLevel === 5 && score >= LEVEL_DEFS[4].unlockReq) grantAchievement('beat_level5');
+    if (dailyMode) grantAchievement('daily_first');
+}
+
+// ─── Leaderboard helpers ───────────────────────────────────────
+function submitScore(levelIdx, pts) {
+    const board = profile.levelLeaderboard[levelIdx];
+    board.push({ name: profile.name, score: pts, date: todayKey() });
+    board.sort((a,b) => b.score - a.score);
+    profile.levelLeaderboard[levelIdx] = board.slice(0, 10);
+}
+
+// ─── Screen shake ──────────────────────────────────────────────
+function triggerShake(intensity, dur) {
+    shake.intensity = Math.max(shake.intensity, intensity);
+    shake.dur = Math.max(shake.dur, dur);
+}
+
+function updateShake(dt) {
+    if (shake.dur <= 0) { shake.x = 0; shake.y = 0; return; }
+    shake.dur -= dt;
+    const i = shake.intensity * (shake.dur / 0.35);
+    shake.x = (Math.random()-0.5) * i * 2;
+    shake.y = (Math.random()-0.5) * i * 2;
+    if (shake.dur <= 0) { shake.x = 0; shake.y = 0; shake.intensity = 0; }
+}
+
+// ─── Time power-up ────────────────────────────────────────────
+function spawnTimePowerup() {
+    const x = 160 + Math.random() * 520;
+    timePowerups.push({ x, y: FLOOR_Y - 28, pulse: 0, collected: false, alpha: 1 });
+}
+
+function updateTimePowerups(dt) {
+    if (gameState !== 'playing' || practiceMode) return;
+    timePowerupTimer -= dt;
+    if (timePowerupTimer <= 0 && timePowerups.length === 0 && timeLeft < 45) {
+        spawnTimePowerup();
+        timePowerupTimer = 18 + Math.random()*12;
+    }
+    for (const p of timePowerups) {
+        p.pulse += dt * 3.2;
+        if (!p.collected) {
+            const d = Math.hypot(player.x + player.w/2 - p.x, player.y + player.h - p.y);
+            if (d < 26) {
+                p.collected = true;
+                timeLeft = Math.min(timeLeft + 5, levelDef.time);
+                SFX.powerup();
+                grantAchievement('grab_extra_time');
+                popups.push({ x:p.x, y:p.y-20, vy:-1.2, text:'+5s', pts:0, life:2 });
+            }
+        }
+    }
+    timePowerups = timePowerups.filter(p => !p.collected);
+}
+
+// ─── Gamepad polling ──────────────────────────────────────────
+function pollGamepad() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    let found = false;
+    for (const pad of pads) {
+        if (!pad) continue;
+        found = true;
+        gp.connected = true;
+        // Axes: 0=LX, 1=LY, 2=RX, 3=RY
+        const lx = pad.axes[0] || 0, ly = pad.axes[1] || 0;
+        const rx = pad.axes[2] || 0, ry = pad.axes[3] || 0;
+        const dead = 0.18;
+        gp.left  = lx < -dead;
+        gp.right = lx >  dead;
+        gp.jump  = pad.buttons[0]?.pressed; // A
+        gp.grab  = pad.buttons[1]?.pressed; // B
+        gp.pause = pad.buttons[9]?.pressed; // Start
+        // Right stick aim
+        if (Math.hypot(rx, ry) > dead) {
+            gp.aimX = player.x + player.w/2 + rx * 200;
+            gp.aimY = player.y + player.h/2 + ry * 200;
+        }
+        // Right trigger shoot (button index 7)
+        const shoot = pad.buttons[7]?.pressed || pad.buttons[5]?.pressed;
+        if (shoot && !gpPrevShoot && player.hasBall && gameState === 'playing') {
+            mouse.x = gp.aimX; mouse.y = gp.aimY;
+            shootBall();
+        }
+        gpPrevShoot = shoot;
+        if (gp.pause && !gpPrevPause) {
+            if (gameState === 'playing') gameState = 'paused';
+            else if (gameState === 'paused') { gameState = 'playing'; lastTs = 0; }
+        }
+        gpPrevPause = gp.pause;
+        break;
+    }
+    if (!found) gp.connected = false;
+}
+
+// ─── Trajectory arc ──────────────────────────────────────────
+function computeArc(fromX, fromY, toX, toY) {
+    const dx = toX - fromX, dy = toY - fromY;
+    const d  = Math.hypot(dx, dy);
+    if (d < 5) return [];
+    const power = Math.max(8, Math.min(d / 18, 22));
+    let vx = (dx/d)*power, vy = (dy/d)*power;
+    let x = fromX, y = fromY;
+    const pts = [];
+    for (let i = 0; i < 44; i++) {
+        if (levelDef.wind) vx += levelDef.wind;
+        vy += levelDef.gravity;
+        x += vx; y += vy;
+        if (y > FLOOR_Y || x < 0 || x > GW) break;
+        pts.push({ x, y });
+    }
+    return pts;
 }
 
 // ─── Update functions ─────────────────────────────────────────
 const vKeys = { a:false, d:false, w:false, s:false };
 
 function updatePlayer(dt) {
-    const goLeft  = keys['a'] || keys['arrowleft']  || vKeys['a'];
-    const goRight = keys['d'] || keys['arrowright'] || vKeys['d'];
-    const doJump  = keys['w'] || keys['arrowup']    || vKeys['w'];
-    const doGrab  = keys['s'] || keys['arrowdown']  || vKeys['s'];
+    const goLeft  = keys['a'] || keys['arrowleft']  || vKeys['a'] || gp.left;
+    const goRight = keys['d'] || keys['arrowright'] || vKeys['d'] || gp.right;
+    const doJump  = keys['w'] || keys['arrowup']    || vKeys['w'] || gp.jump;
+    const doGrab  = keys['s'] || keys['arrowdown']  || vKeys['s'] || gp.grab;
 
     if      (goLeft)  { player.vx = -PLAYER_SPD; player.facing = -1; }
     else if (goRight) { player.vx =  PLAYER_SPD; player.facing =  1; }
@@ -603,6 +918,7 @@ function rimBounce(rx, ry) {
     const d  = Math.hypot(dx, dy);
     const minD = BALL_R + RIM_R;
     if (d < minD && d > 0.001) {
+        rimHitThisShot = true;
         const nx = dx/d, ny = dy/d;
         const dot = ball.vx*nx + ball.vy*ny;
         if (dot < 0) { ball.vx -= 2*dot*nx*0.52; ball.vy -= 2*dot*ny*0.52; }
@@ -631,7 +947,12 @@ function updateEffects(dt) {
     });
     popups = popups.filter(p => p.life > 0);
     popups.forEach(p => { p.y += p.vy; p.life -= dt; });
-    if (comboTimer > 0) { comboTimer -= dt; if (comboTimer <= 0) combo = 0; }
+    if (comboTimer > 0) { comboTimer -= dt; if (comboTimer <= 0) { combo = 0; hotStreakAlpha = 0; } }
+    if (hotStreakAlpha > 0) hotStreakAlpha = Math.max(0, hotStreakAlpha - dt * 0.4);
+    updateShake(dt);
+    // Achievement toast
+    if (achievementTimer > 0) achievementTimer -= dt;
+    else if (achievementQueue.length > 0) { achievementTimer = 3.2; achievementQueue.shift(); }
 }
 
 // ─── Draw helpers ─────────────────────────────────────────────
@@ -734,6 +1055,8 @@ function drawPlayer() {
     const px = player.x, py = player.y, pw = player.w, ph = player.h;
     const cx = px + pw/2;
 
+    drawHotStreakGlow(cx, py + ph/2, pw * 0.7);
+
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.beginPath(); ctx.ellipse(cx, FLOOR_Y+2, 15, 5, 0, 0, Math.PI*2); ctx.fill();
 
@@ -832,25 +1155,230 @@ function drawBall() {
     }
     ctx.restore();
 
+    if (ball.inFlight && hotStreakAlpha > 0) drawHotStreakGlow(bx, by, BALL_R);
     if (player.hasBall) drawAim(bx, by);
 }
 
 // ─── Draw: aim indicator ──────────────────────────────────────
 function drawAim(bx, by) {
-    const dx = mouse.x-bx, dy = mouse.y-by;
+    const aimX = gp.connected ? gp.aimX : mouse.x;
+    const aimY = gp.connected ? gp.aimY : mouse.y;
+    const dx = aimX-bx, dy = aimY-by;
     const d  = Math.hypot(dx, dy);
     if (d < 5) return;
     const maxD = 210, clamp = Math.min(d, maxD), power = clamp/maxD;
     ctx.save();
-    ctx.setLineDash([5,7]);
-    ctx.strokeStyle = `rgba(255,255,110,${0.3+power*0.55})`;
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+(dx/d)*clamp*0.52,by+(dy/d)*clamp*0.52); ctx.stroke();
-    ctx.setLineDash([]);
+
+    // Trajectory arc (if enabled in settings)
+    if (profile.settings.showArc) {
+        const arcPts = computeArc(bx, by, aimX, aimY);
+        ctx.setLineDash([4,6]);
+        ctx.strokeStyle = `rgba(255,255,110,${0.22+power*0.35})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        arcPts.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Arc end dot
+        if (arcPts.length > 0) {
+            const last = arcPts[arcPts.length-1];
+            ctx.fillStyle = `rgba(255,255,110,${0.4+power*0.45})`;
+            ctx.beginPath(); ctx.arc(last.x, last.y, 3, 0, Math.PI*2); ctx.fill();
+        }
+    } else {
+        ctx.setLineDash([5,7]);
+        ctx.strokeStyle = `rgba(255,255,110,${0.3+power*0.55})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+(dx/d)*clamp*0.52,by+(dy/d)*clamp*0.52); ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
     const bw=44,bh=6,barX=bx-bw/2,barY=by+22;
     ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(barX-1,barY-1,bw+2,bh+2);
     ctx.fillStyle=power<0.4?'#2ecc71':power<0.72?'#f39c12':'#e74c3c';
     ctx.fillRect(barX,barY,bw*power,bh);
+    ctx.restore();
+}
+
+// ─── Draw: time power-ups ─────────────────────────────────────
+function drawTimePowerups() {
+    for (const p of timePowerups) {
+        const glow = 0.6 + Math.sin(p.pulse)*0.4;
+        ctx.save();
+        ctx.shadowColor = '#00ffaa'; ctx.shadowBlur = 18 * glow;
+        ctx.fillStyle = `rgba(0,${Math.floor(200+55*glow)},${Math.floor(120+80*glow)},${0.82+0.12*glow})`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 14, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('+5s', p.x, p.y);
+        ctx.textBaseline = 'alphabetic';
+        ctx.restore();
+    }
+}
+
+// ─── Draw: hot-streak glow ────────────────────────────────────
+function drawHotStreakGlow(x, y, r) {
+    if (hotStreakAlpha <= 0) return;
+    ctx.save();
+    const a = hotStreakAlpha * 0.7;
+    const glowColor = combo >= 5 ? `rgba(255,60,0,${a})` : `rgba(255,150,0,${a})`;
+    ctx.shadowColor = combo >= 5 ? '#ff3300' : '#ff8800';
+    ctx.shadowBlur  = 28 + Math.sin(Date.now()/160)*8;
+    ctx.strokeStyle = glowColor;
+    ctx.lineWidth   = 3;
+    ctx.beginPath(); ctx.arc(x, y, r + 4 + Math.sin(Date.now()/120)*3, 0, Math.PI*2); ctx.stroke();
+    ctx.shadowBlur  = 0;
+    ctx.restore();
+}
+
+// ─── Draw: achievement toast ──────────────────────────────────
+function drawAchievementToast() {
+    if (achievementTimer <= 0 || achievementQueue.length === 0) return;
+    const a = achievementQueue[0];
+    const fade = Math.min(1, achievementTimer/0.5) * Math.min(1, (3.2-achievementTimer+0.5)/0.5);
+    const x = GW - 268, y = 88;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, fade);
+    ctx.fillStyle = 'rgba(10,15,35,0.93)';
+    roundRect(x, y, 252, 52, 10); ctx.fill();
+    ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.font = '22px Arial'; ctx.textAlign = 'left'; ctx.fillStyle = '#ffd700';
+    ctx.fillText(a.icon, x+12, y+35);
+    ctx.font = 'bold 12px Arial'; ctx.fillStyle = '#ffd700';
+    ctx.fillText('ACHIEVEMENT UNLOCKED', x+44, y+20);
+    ctx.font = '11px Arial'; ctx.fillStyle = '#eee';
+    ctx.fillText(a.name, x+44, y+34);
+    ctx.font = '10px Arial'; ctx.fillStyle = '#aaa';
+    ctx.fillText(a.desc, x+44, y+46);
+    ctx.restore();
+}
+
+// ─── Draw: settings screen ────────────────────────────────────
+function drawSettings() {
+    ctx.fillStyle='rgba(5,10,24,0.94)'; ctx.fillRect(0,0,GW,GH);
+    ctx.save(); ctx.textAlign='center';
+    ctx.font='bold 32px Arial'; ctx.fillStyle='#ffd700'; ctx.fillText('SETTINGS',GW/2,52);
+
+    const panel = { x:GW/2-220, y:90, w:440, h:320, r:14 };
+    ctx.fillStyle='rgba(15,20,45,0.90)'; roundRect(panel.x,panel.y,panel.w,panel.h,panel.r); ctx.fill();
+    ctx.strokeStyle='rgba(80,80,150,0.5)'; ctx.lineWidth=1.5; ctx.stroke();
+
+    // Volume
+    ctx.textAlign='left'; ctx.fillStyle='#ccc'; ctx.font='bold 14px Arial';
+    ctx.fillText('Volume', panel.x+28, panel.y+46);
+    const vx=panel.x+140, vy=panel.y+38, vw=260, vh=12;
+    ctx.fillStyle='rgba(30,30,60,0.8)'; ctx.fillRect(vx,vy,vw,vh);
+    ctx.fillStyle='#ffd700'; ctx.fillRect(vx,vy,vw*profile.settings.volume,vh);
+    ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1; ctx.strokeRect(vx,vy,vw,vh);
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(vx+vw*profile.settings.volume,vy+vh/2,9,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#999'; ctx.font='12px Arial'; ctx.textAlign='right';
+    ctx.fillText(Math.round(profile.settings.volume*100)+'%', panel.x+panel.w-28, panel.y+46);
+
+    // Show arc toggle
+    ctx.textAlign='left'; ctx.fillStyle='#ccc'; ctx.font='bold 14px Arial';
+    ctx.fillText('Aim Arc', panel.x+28, panel.y+96);
+    const arcOn = profile.settings.showArc;
+    ctx.fillStyle=arcOn?'rgba(30,120,30,0.85)':'rgba(50,50,80,0.85)';
+    roundRect(panel.x+140,panel.y+80,80,24,8); ctx.fill();
+    ctx.fillStyle='white'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
+    ctx.fillText(arcOn?'ON':'OFF', panel.x+180, panel.y+96);
+
+    // Fullscreen toggle
+    ctx.textAlign='left'; ctx.fillStyle='#ccc'; ctx.font='bold 14px Arial';
+    ctx.fillText('Fullscreen', panel.x+28, panel.y+146);
+    const fsOn = profile.settings.fullscreen;
+    ctx.fillStyle=fsOn?'rgba(30,120,30,0.85)':'rgba(50,50,80,0.85)';
+    roundRect(panel.x+140,panel.y+130,80,24,8); ctx.fill();
+    ctx.fillStyle='white'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
+    ctx.fillText(fsOn?'ON':'OFF', panel.x+180, panel.y+146);
+
+    // Reset stats button
+    ctx.fillStyle='rgba(80,20,20,0.85)';
+    roundRect(panel.x+140,panel.y+200,180,34,8); ctx.fill();
+    ctx.strokeStyle='#aa3333'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='#ff8888'; ctx.font='bold 13px Arial'; ctx.textAlign='center';
+    ctx.fillText('Reset Stats', panel.x+230, panel.y+222);
+
+    // Back
+    ctx.fillStyle='rgba(40,40,60,0.88)'; roundRect(14,GH-52,100,36,8); ctx.fill();
+    ctx.fillStyle='#aaa'; ctx.font='bold 13px Arial'; ctx.textAlign='left';
+    ctx.fillText('← BACK',24,GH-29);
+    ctx.restore();
+}
+
+// ─── Draw: leaderboard ────────────────────────────────────────
+function drawLeaderboard() {
+    ctx.fillStyle='rgba(5,10,24,0.94)'; ctx.fillRect(0,0,GW,GH);
+    ctx.save(); ctx.textAlign='center';
+    ctx.font='bold 28px Arial'; ctx.fillStyle='#ffd700';
+    ctx.fillText('LEADERBOARD',GW/2,46);
+
+    // Level nav
+    const lv = LEVEL_DEFS[leaderboardLevel-1];
+    ctx.fillStyle='rgba(50,50,90,0.85)'; roundRect(GW/2-170,58,340,34,10); ctx.fill();
+    ctx.fillStyle=`hsl(${lv.accentHue},80%,65%)`; ctx.font='bold 14px Arial';
+    ctx.fillText(`◀  Level ${leaderboardLevel}: ${lv.name}  ▶`, GW/2, 80);
+
+    const board = profile.levelLeaderboard[leaderboardLevel-1] || [];
+    if (board.length === 0) {
+        ctx.fillStyle='#555'; ctx.font='16px Arial';
+        ctx.fillText('No scores yet — play to record a score!', GW/2, GH/2);
+    } else {
+        for (let i=0;i<Math.min(board.length,10);i++) {
+            const e=board[i];
+            const y=130+i*32, isTop=(i<3);
+            ctx.fillStyle=i===0?'rgba(80,65,0,0.75)':i===1?'rgba(60,60,60,0.65)':i===2?'rgba(60,40,20,0.65)':'rgba(20,25,45,0.65)';
+            roundRect(GW/2-240,y-20,480,28,6); ctx.fill();
+            const medal=['🥇','🥈','🥉'][i]||`${i+1}.`;
+            ctx.textAlign='left';
+            ctx.fillStyle=isTop?'#ffd700':'#ccc'; ctx.font=`bold 13px Arial`;
+            ctx.fillText(`${medal}  ${e.name}`, GW/2-228, y-1);
+            ctx.textAlign='right';
+            ctx.fillStyle=isTop?'#ffd700':'#aaa'; ctx.font=`bold 13px Arial`;
+            ctx.fillText(`${e.score} pts  ${e.date||''}`, GW/2+228, y-1);
+        }
+    }
+
+    ctx.fillStyle='rgba(40,40,60,0.88)'; roundRect(14,GH-52,100,36,8); ctx.fill();
+    ctx.fillStyle='#aaa'; ctx.font='bold 13px Arial'; ctx.textAlign='left';
+    ctx.fillText('← BACK',24,GH-29);
+    ctx.restore();
+}
+
+// ─── Draw: daily challenge screen ────────────────────────────
+function drawDailySelect() {
+    ctx.fillStyle='rgba(5,10,24,0.94)'; ctx.fillRect(0,0,GW,GH);
+    ctx.save(); ctx.textAlign='center';
+    ctx.font='bold 32px Arial'; ctx.fillStyle='#ffd700';
+    ctx.shadowColor='#ffdd00'; ctx.shadowBlur=22;
+    ctx.fillText('DAILY CHALLENGE', GW/2, 80); ctx.shadowBlur=0;
+
+    const key = todayKey();
+    const done = profile.dailyBest && profile.dailyBest[key] !== undefined;
+    const lv = dailyLevelDef();
+
+    ctx.font='15px Arial'; ctx.fillStyle='#aaa';
+    ctx.fillText(key, GW/2, 110);
+    ctx.font='bold 18px Arial'; ctx.fillStyle='#eee';
+    ctx.fillText(`Today\'s court: ${lv.name || 'Special Mix'}`, GW/2, 148);
+    ctx.font='13px Arial'; ctx.fillStyle='#888';
+    ctx.fillText(`${lv.time}s  |  ${lv.wind>0?'Wind':'No wind'}  |  ${lv.rimMove?'Moving rim':'Fixed rim'}`, GW/2, 174);
+
+    if (done) {
+        ctx.font='bold 22px Arial'; ctx.fillStyle='#44ff88';
+        ctx.fillText(`Today\'s best: ${profile.dailyBest[key]} pts`, GW/2, 220);
+        ctx.font='14px Arial'; ctx.fillStyle='#666';
+        ctx.fillText('Play again to beat your score!', GW/2, 248);
+    }
+
+    ctx.fillStyle='rgba(20,80,20,0.88)'; roundRect(GW/2-120,280,240,52,12); ctx.fill();
+    ctx.strokeStyle='#44ff44'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle='white'; ctx.font='bold 20px Arial'; ctx.fillText('PLAY TODAY',GW/2,312);
+
+    ctx.fillStyle='rgba(40,40,60,0.88)'; roundRect(14,GH-52,100,36,8); ctx.fill();
+    ctx.fillStyle='#aaa'; ctx.font='bold 13px Arial'; ctx.textAlign='left';
+    ctx.fillText('← BACK',24,GH-29);
     ctx.restore();
 }
 
@@ -1009,6 +1537,23 @@ function drawTitle() {
     ctx.fillStyle='rgba(255,255,255,0.18)'; ctx.font='11px Arial';
     ctx.fillText(`Games: ${profile.gamesPlayed}   Levels unlocked: ${profile.levelsUnlocked}/5   Total pts: ${profile.totalPoints}`,GW/2,448);
 
+    // Daily challenge button
+    const dailyDone = profile.dailyBest && profile.dailyBest[todayKey()];
+    ctx.fillStyle= dailyDone ? 'rgba(30,70,30,0.80)' : 'rgba(50,40,0,0.88)';
+    roundRect(GW/2-108,460,216,32,8); ctx.fill();
+    ctx.strokeStyle= dailyDone ? '#44ff88' : '#ffdd00'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle= dailyDone ? '#44ff88' : '#ffd700'; ctx.font='bold 13px Arial';
+    ctx.fillText(dailyDone ? `📆 DAILY DONE  ${profile.dailyBest[todayKey()]}pts` : '📆 DAILY CHALLENGE', GW/2, 481);
+
+    // Bottom buttons
+    ctx.fillStyle='rgba(30,30,55,0.82)'; roundRect(GW-290,GH-52,130,36,8); ctx.fill();
+    ctx.fillStyle='#aaaaff'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
+    ctx.fillText('🏆 LEADERBOARD',GW-225,GH-29);
+
+    ctx.fillStyle='rgba(30,30,55,0.82)'; roundRect(GW-140,GH-52,124,36,8); ctx.fill();
+    ctx.fillStyle='#aaaaff'; ctx.font='bold 12px Arial';
+    ctx.fillText('⚙ SETTINGS',GW-78,GH-29);
+
     ctx.restore();
 }
 
@@ -1067,6 +1612,13 @@ function drawLevelSelect() {
             ctx.fillText(best>0?`Best: ${best}pts`:'No record',cardX+cardW/2,cardY+216);
         }
     }
+
+    // Practice mode toggle
+    ctx.fillStyle=practiceMode?'rgba(0,80,80,0.88)':'rgba(30,30,60,0.88)';
+    roundRect(GW/2-80,GH-52,160,36,8); ctx.fill();
+    ctx.strokeStyle=practiceMode?'#44ffff':'rgba(80,80,130,0.5)'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle=practiceMode?'#44ffff':'#888'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
+    ctx.fillText(practiceMode?'✓ PRACTICE MODE':'PRACTICE MODE',GW/2,GH-29);
 
     // Back button
     ctx.fillStyle='rgba(40,40,60,0.88)';
@@ -1359,50 +1911,65 @@ function loop(ts) {
     const dt = lastTs===0 ? 0.016 : Math.min((ts-lastTs)/1000, 0.05);
     lastTs = ts;
 
+    pollGamepad();
+
     if (gameState==='playing') {
-        timeLeft = Math.max(0, timeLeft-dt);
-        // Time-low beep every second under 10s
-        if (timeLeft<=10 && timeLeft>0) {
-            timeLowPulse -= dt;
-            if (timeLowPulse<=0) { SFX.timelow(); timeLowPulse=1.0; }
-        }
-        if (timeLeft===0) {
-            gameState='gameover';
-            profile.gamesPlayed++;
-            if (score>profile.levelBests[currentLevel-1]) profile.levelBests[currentLevel-1]=score;
-            if (currentLevel<5 && score>=LEVEL_DEFS[currentLevel].unlockReq) {
-                if (profile.levelsUnlocked<=currentLevel) profile.levelsUnlocked=currentLevel+1;
+        if (!practiceMode) {
+            timeLeft = Math.max(0, timeLeft-dt);
+            if (timeLeft<=10 && timeLeft>0) {
+                timeLowPulse -= dt;
+                if (timeLowPulse<=0) { SFX.timelow(); timeLowPulse=1.0; }
             }
-            saveProfile();
-            SFX.gameover();
+            if (timeLeft===0) {
+                gameState='gameover';
+                profile.gamesPlayed++;
+                if (score>profile.levelBests[currentLevel-1]) profile.levelBests[currentLevel-1]=score;
+                if (currentLevel<5 && score>=LEVEL_DEFS[currentLevel].unlockReq) {
+                    if (profile.levelsUnlocked<=currentLevel) profile.levelsUnlocked=currentLevel+1;
+                }
+                saveProfile();
+                SFX.gameover();
+            }
         }
         updatePlayer(dt);
         updateBall(dt);
         updateRim(dt);
         updateEffects(dt);
+        updateTimePowerups(dt);
     }
+
+    // Apply screen shake offset
+    ctx.save();
+    if (shake.dur > 0) ctx.translate(shake.x, shake.y);
 
     // Always draw background/court as backdrop for all screens
     drawBackground();
     drawCourt();
 
-    if (gameState==='loading') { drawLoading(); requestAnimationFrame(loop); return; }
+    if (gameState==='loading') { ctx.restore(); drawLoading(); requestAnimationFrame(loop); return; }
 
     drawHoopBack();
+    drawTimePowerups();
     drawEffects();
     drawPlayer();
     drawBall();
     drawNet();
     drawHoopFront();
 
-    if (gameState==='playing')     drawHUD();
+    ctx.restore(); // end shake transform
+
+    if (gameState==='playing')     { drawHUD(); if (practiceMode) { ctx.save(); ctx.textAlign='center'; ctx.fillStyle='rgba(0,200,200,0.6)'; ctx.font='bold 14px Arial'; ctx.fillText('PRACTICE — no timer  |  ESC to quit',GW/2,GH-24); ctx.restore(); } }
     if (gameState==='title')       drawTitle();
     if (gameState==='levelselect') drawLevelSelect();
     if (gameState==='customize')   drawCustomize();
     if (gameState==='paused')      drawPaused();
     if (gameState==='gameover')    drawGameOver();
     if (gameState==='unlock')      drawUnlock();
+    if (gameState==='settings')    drawSettings();
+    if (gameState==='leaderboard') drawLeaderboard();
+    if (gameState==='daily')       drawDailySelect();
 
+    drawAchievementToast();
     drawMobileControls();
     requestAnimationFrame(loop);
 }

@@ -71,12 +71,16 @@ ipcMain.handle('load-profile', () => {
     }
 });
 
-// ── IPC: ask for player name (first launch) ───────────────────
+// ── IPC: ask for player name ──────────────────────────────────
 ipcMain.handle('ask-name', async (_event, currentName) => {
-    const win = BrowserWindow.getFocusedWindow();
-    // Simple input via showMessageBox is limited; we return null and let the
-    // renderer handle name editing via a canvas prompt approach.
     return currentName;
+});
+
+// ── IPC: set fullscreen ───────────────────────────────────────
+ipcMain.handle('set-fullscreen', (_event, enable) => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (win) win.setFullScreen(!!enable);
+    return { ok: true };
 });
 
 /*
