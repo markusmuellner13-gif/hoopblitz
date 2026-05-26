@@ -29,5 +29,8 @@ html, body {
     touch-action: none;
     -webkit-tap-highlight-color: transparent;
     border-radius: 4px;
-    box-shadow: 0 0 50px rgba(244, 162, 97, 0.25), 0 0 100px rgba(0,0,0,0.8);
+    box-shadow:
+        0 0 60px rgba(244, 162, 97, 0.28),
+        0 0 120px rgba(0, 0, 0, 0.85);
+    cursor: crosshair;
 }

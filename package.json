@@ -1,0 +1,66 @@
+{
+  "name": "hoopblitz",
+  "version": "1.0.0",
+  "description": "HoopBlitz - Competitive Arcade Basketball Game",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder -mwl"
+  },
+  "build": {
+    "appId": "com.hoopblitz.game",
+    "productName": "HoopBlitz",
+    "copyright": "Copyright © 2026 HoopBlitz",
+    "files": [
+      "**/*",
+      "!.git/**",
+      "!node_modules/.cache/**",
+      "!*.md"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Game"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.games"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
+    },
+    "steam": {
+      "note": "To publish on Steam: register at partner.steamgames.com, get your AppID, download Steamworks SDK, install 'greenworks' npm package, then replace the stub in main.js with real Steam API calls."
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  }
+}
